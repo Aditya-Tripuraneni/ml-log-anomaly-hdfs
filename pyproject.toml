@@ -1,0 +1,25 @@
+[project]
+name = "hdfs-log-anomaly"
+version = "0.1.0"
+description = "Log-based anomaly detection on HDFS: supervised vs. unsupervised (SFWRENG 4AL3, Group 07)"
+requires-python = ">=3.12"
+dependencies = [
+    "drain3>=0.9.11",
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.4",
+    "pandas>=3.1.0",
+    "scikit-learn>=1.9.1",
+    "torch>=2.14.1",
+    "xgboost>=3.4.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.28,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "jupyter>=1.1.1",
+    "pytest>=9.1.1",
+    "ruff>=0.17.2",
+]
