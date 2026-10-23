@@ -1,6 +1,6 @@
 """Shared data loading and the single train/val/test split used by every model.
 
-Owner: shared (Aditya). Do not change split logic without telling the team,
+Owner: Shared. Do not change split logic without telling the team,
 since all models must be compared on identical splits.
 """
 

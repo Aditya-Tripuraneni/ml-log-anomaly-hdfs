@@ -35,4 +35,5 @@ scripts/                runnable entry points
 docs/                   overview, task split, progress log
 ```
 
-Start with [docs/overview.md](docs/overview.md) and [docs/task-split.md](docs/task-split.md).
+Start with [docs/dataset-primer.md](docs/dataset-primer.md) (what the data is),
+[docs/overview.md](docs/overview.md) and [docs/task-split.md](docs/task-split.md).
