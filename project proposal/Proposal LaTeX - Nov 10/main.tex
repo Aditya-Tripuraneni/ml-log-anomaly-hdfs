@@ -37,8 +37,8 @@
 \title{Group X Progress Report:\\My Group's Project Name}
 
 
-\author{Aditya Tripuraneni, Second Author, Third Author \\
-  \texttt{\{tripuraa,macid2,macid3\}@mcmaster.ca} }
+\author{Aditya Tripuraneni, Vanessa Lai, Third Author \\
+  \texttt{\{tripuraa,laiv3,macid3\}@mcmaster.ca} }
 
 %\author{
 %  \textbf{First Author\textsuperscript{1}},
@@ -149,6 +149,12 @@ one-to-one; (2) converts each stored sequence string into a list of integer even
 would leak the label, and the other two fall outside our model input (the event sequence
 alone); and (4) encodes labels as 0 (normal) and 1 (anomalous).
 
+\subsection{Train, Validation, and Test Splits}
+Our dataset has a 70/10/20 train/validation/test split. We stratified the dataset on the binary
+label so each split keeps the same 2.93\% anomaly rate. Without stratification, a
+random split could put too few of the rare anomalies into validation or test, and the
+four models would no longer be compared on the same class balance.
+
 \subsection{Annotation}
 We did not annotate any data. The labels were assigned by the dataset's authors, who
 manually labeled each block session as normal or anomalous using handcrafted rules
@@ -170,9 +176,7 @@ How are you evaluating your model? What results do you have so far? What are you
 
 Write about your plans for the remainder of the project. This should include a discussion of the feedback you received from your TA, and how you plan to improve your approach. Reflect on your implementation and areas for improvement. Refer to item 6. This may be around 0.5 pages.
 
-\section{Template Notes}
-
-You can remove this section or comment it out, as it only contains instructions for how to use this template. You may use subsections in your document as you find appropriate.
+vanessa ideas - 5 fold cross validation. 
 
 \subsection{Tables and figures}
 
