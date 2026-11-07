@@ -6,7 +6,7 @@ results at team meetings. Everyone reviews someone else's work.
 | Owner | Models / work |
 |---|---|
 | Aditya | Logistic Regression, XGBoost (both supervised); shared pipeline (`data.py`, `features.py`, `evaluation.py`); label-fraction experiment (1% / 10% / 100%) |
-| TBD | Isolation Forest (unsupervised) |
+| Vanessa | Isolation Forest (unsupervised) |
 | TBD | DeepLog-style LSTM (unsupervised; PCA fallback) |
 
 Teammates: Harmanpreet Singh Sagar, Vanessa Lai. Fill in the TBD owners once agreed.
