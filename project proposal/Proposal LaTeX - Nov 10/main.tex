@@ -85,17 +85,25 @@
 
 \section{Introduction}
 
-Distributed systems output hundreds of thousands of logs an hour, which is far more than individuals analyzing them or debugging them can read by hand. 
-Labels are expensive to produce for the volume of logs generated, so it is useful to know whether they are necessary for anomaly detection. Our main research question is whether unsupervised models can perform as well as
-supervised models on this task. We compare two supervised classifiers (logistic
-regression and XGBoost) with two unsupervised detectors (Isolation Forest and a
-DeepLog-style LSTM) on the same setup, and we report precision, recall, F1, and PR-AUC on the anomalous class. 
+Distributed systems record their activity in logs, and engineers rely on these logs to
+find out when something has gone wrong. The volume of logsmakes manual inspection impractical:
+the HDFS cluster in our dataset produced over 11 million log lines in under two days,
+roughly 290,000 lines per hour \cite{Zhu2020loghub,He2016}. Failures are also rare,
+affecting only about 3\% of sessions, so they are very hidden in the data.
+Supervised models can learn to recognize these failures, but they need
+labeled examples, and labeling logs at this scale takes time and money.
+This raises the question of whether labels are necessary at all. Our main research question
+is whether unsupervised models, which train without needing labels, can detect anomalies as
+well as supervised models. We will compare two supervised classifiers
+(logistic regression and XGBoost) with two unsupervised detectors (Isolation Forest
+and a DeepLog-style LSTM) using the same preprocessing and the same
+train/validation/test split.
 
 \section{Related Work}
 
 Here, talk about the related work you encountered for your approach. Cite at least 5 references. Refer to item 2. No one has done exactly your task? Write about the most similar thing you can find. This should be around 0.25-0.5 pages.
 
-\section{Dataset}
+\section{Dataset}    
 
 \subsection{Source and Collection}
 We use the HDFS\_v1 dataset from Loghub \cite{Zhu2020loghub,LoghubRepo}. Its logs were
@@ -178,7 +186,7 @@ How are you evaluating your model? What results do you have so far? What are you
 
 \section{Feedback and Plans}
 
-Our team plans to implement 5 fold cross validation to better evaluate the performance of the models. Since we are using a small dataset, cross validation will allow us to maximize the use of the dataset.
+We plan to use 5-fold cross-validation over the training and  validation data, keeping the test set fixed, to measure how much each model’s scores and chosen thresholds vary across folds.
 
 \subsection{Tables and figures}
 
