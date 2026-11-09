@@ -41,6 +41,30 @@ models/checkpoints/
 .env
 .env.*
 
+# LaTeX build artifacts (keep .tex, .bib, .sty, .bst, and the PDF)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+*.vrb
+*.idx
+*.ilg
+*.ind
+*.dvi
+*.xdv
+*.run.xml
+*-blx.bib
+
 # OS / editors
 .DS_Store
 Thumbs.db
