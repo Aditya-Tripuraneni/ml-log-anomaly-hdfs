@@ -60,6 +60,14 @@ class EventCountVectorizer:
         return self.fit(sessions).transform(sessions)
 
 
-def event_sequences(sessions):
-    """Return the ordered event-ID sequence per session."""
-    raise NotImplementedError
+def event_sequences(sessions: pd.DataFrame) -> list[np.ndarray]:
+    """Return each session's ordered event IDs as an integer array, in input row order.
+
+    This is the LSTM's input: unlike the count vectors, event order is kept, and sessions
+    keep their own lengths (no padding here; the model pads its own history windows).
+
+        events           ->  array \
+        [5, 5, 22, 5]        array([ 5,  5, 22,  5]) \
+        [22]                 array([22]) \
+    """
+    return [np.asarray(events, dtype=np.int64) for events in sessions.events]
