@@ -192,6 +192,15 @@ We also add an end-of-session token to every sequence so that the model can lear
 
 Describe your model and implementation here. Refer to item 4. This may take around a page.
 
+\paragraph{Isolation Forest.} Isolation Forest \cite{Liu2008iforest} is an
+unsupervised method that flags sessions that are unusual compared with the rest of the data. It builds
+random trees, each of which repeatedly splits the sessions on a random feature and
+a random value. Unusual sessions are isolated after only a few splits, while typical
+sessions need many, so a short average path length across the trees indicates an
+anomaly. We use the scikit-learn implementation with 100 trees, trained on the
+$\log(1+x)$ event-count vectors of the training split. Labels are used only afterwards,
+to choose a decision threshold on the validation split and to evaluate the model.
+
 
 \section{Results and Evaluation}
 \label{sec:results}
@@ -246,6 +255,16 @@ Overall, our results so far show a clear advantage for supervised learning on th
 \label{sec:plans}
 
 We plan to use 5-fold cross-validation over the training and  validation data, keeping the test set fixed, to measure how much each model’s scores and chosen thresholds vary across folds.
+
+\subsection{TA Feedback}
+We received feedback from our TA, Hongyi, who suggested we include significance tests
+for our results. We plan to use McNemar's test to compare each unsupervised model
+against each supervised model. McNemar's test fits our setup because every model makes
+a binary prediction on the same test sessions, and it only looks at the sessions where
+the two models disagree. Because McNemar's test only tells us whether two models
+differ, we will also report 95\% confidence intervals for F1 and PR-AUC to show how
+large the difference is.
+
 
 \subsection{Tables and figures}
 
