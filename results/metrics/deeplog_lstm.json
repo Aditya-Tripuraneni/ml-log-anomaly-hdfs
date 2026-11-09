@@ -1,0 +1,75 @@
+{
+  "model": "deeplog_lstm",
+  "seed": 42,
+  "split": [
+    0.7,
+    0.1,
+    0.2
+  ],
+  "split_sizes": {
+    "train": 402541,
+    "val": 57507,
+    "test": 115013
+  },
+  "train_sessions_used": 50000,
+  "trained_on_labels": false,
+  "hyperparameters": {
+    "window": 10,
+    "embed_dim": 16,
+    "hidden_size": 64,
+    "num_layers": 2,
+    "epochs": 10,
+    "batch_size": 1024,
+    "learning_rate": 0.001,
+    "loss": "cross-entropy (next event)",
+    "optimizer": "Adam"
+  },
+  "event_types_seen_in_training": 28,
+  "train_loss_per_epoch": [
+    0.5454421919812529,
+    0.2830983424830708,
+    0.26819274050415876,
+    0.26270083322199705,
+    0.25956615290303514,
+    0.2575498401641092,
+    0.25606929660300515,
+    0.2548878435071424,
+    0.25393119435774597,
+    0.25331168483223504
+  ],
+  "train_seconds": 272.2,
+  "score": "max -log P(next token) over the session, end-of-session token included",
+  "f1_threshold_from_val": 4.983778953552246,
+  "metrics": {
+    "val": {
+      "precision": 0.4830253545337344,
+      "recall": 0.667458432304038,
+      "f1": 0.5604587384692097,
+      "pr_auc": 0.46850976958134727
+    },
+    "test": {
+      "precision": 0.4757426800598418,
+      "recall": 0.6609263657957245,
+      "f1": 0.5532496582577358,
+      "pr_auc": 0.47148977741957476
+    }
+  },
+  "ablation_topk_rank": {
+    "score": "worst rank of a true next token (original DeepLog top-k rule)",
+    "top_k_from_val": 5,
+    "metrics": {
+      "val": {
+        "precision": 0.5020325203252033,
+        "recall": 0.14667458432304037,
+        "f1": 0.2270220588235294,
+        "pr_auc": 0.11156569213059574
+      },
+      "test": {
+        "precision": 0.4782608695652174,
+        "recall": 0.13064133016627077,
+        "f1": 0.20522388059701493,
+        "pr_auc": 0.10671581841992704
+      }
+    }
+  }
+}
