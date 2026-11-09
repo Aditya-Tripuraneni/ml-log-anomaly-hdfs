@@ -71,3 +71,13 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Latex
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
