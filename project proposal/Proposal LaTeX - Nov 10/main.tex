@@ -37,8 +37,8 @@
 \title{Group X Progress Report:\\My Group's Project Name}
 
 
-\author{Aditya Tripuraneni, Second Author, Third Author \\
-  \texttt{\{tripuraa,macid2,macid3\}@mcmaster.ca} }
+\author{Aditya Tripuraneni, Second Author, Harmanpreet Singh Sagar \\
+  \texttt{\{tripuraa,macid2,sagarh\}@mcmaster.ca} }
 
 %\author{
 %  \textbf{First Author\textsuperscript{1}},
@@ -92,6 +92,7 @@ Here, write a brief introduction to the problem you are solving. This can be ada
 Here, talk about the related work you encountered for your approach. Cite at least 5 references. Refer to item 2. No one has done exactly your task? Write about the most similar thing you can find. This should be around 0.25-0.5 pages.
 
 \section{Dataset}
+\label{sec:dataset}
 
 \subsection{Source and Collection}
 We use the HDFS\_v1 dataset from Loghub \cite{Zhu2020loghub,LoghubRepo}. Its logs were
@@ -154,19 +155,77 @@ We did not annotate any data. The labels were assigned by the dataset's authors,
 manually labeled each block session as normal or anomalous using handcrafted rules
 \cite{Zhu2020loghub}. We treat them as ground truth.
 
-\section{Features}
 
-Describe any features you used for your model, or how your data was input to your model. Are you doing feature engineering or feature selection? Are you learning embeddings? Is it all part of one neural network? Refer to item 2. This may range from 0.25 pages to 0.5 pages.
+\section{Features}\label{sec:features}
+
+Each block session is represented in one of two ways, depending on the model. In both cases, the model only uses the sequence of event IDs from the session (Section~\ref{sec:dataset}).
+
+\paragraph{Event-count vectors.} Logistic regression, XGBoost, and Isolation Forest use a count-based representation. For each session, we create a vector with one entry for every event type, where each value records how many times that event appears in the session. This is a common representation for HDFS session classification \cite{He2016}. The event vocabulary is built using only the training split, resulting in 29 features. If an event type appears only in the validation or test set, it is ignored so that information from those splits does not leak into training.
+
+Some events can occur many times in the same session, especially when a block is read repeatedly, which makes the raw counts highly skewed. To reduce this effect, we apply $\log(1+x)$ to each count before training the models. The main drawback of this representation is that it only captures how often events occur and completely ignores their order. This is one reason we also use an LSTM-based model.
+
+\paragraph{Ordered event sequences.} The DeepLog-style LSTM \cite{Du2017deeplog} uses the events in their original order. Each event type seen in the training data is assigned an integer token, along with an additional token for events that were never seen during training. The model is trained to predict the next event in a session. For each event, the previous 10 events are used as the input window and the current event is used as the target. At the beginning of a session, shorter windows are left-padded with a padding token.
+
+We also add an end-of-session token to every sequence so that the model can learn when a normal session is expected to stop. This is important for unusually short sessions such as \texttt{[E22, E5]}, where the events themselves may look normal even though the session ends too early. Each token is mapped to a 16-dimensional embedding that is learned together with the LSTM, allowing the model to learn its own representation of the event types rather than relying on manually designed features.
+
+\paragraph{Selection and augmentation.} We do not perform feature selection or data augmentation. Since there are only 29 event types, all count-based features are kept. For logistic regression, the L2 regularization term helps limit the influence of features that are not useful for classification. As additional representations for the count-based models, we plan to test TF-IDF weighting and event $n$-gram counts. These may provide more information about which events are important while also preserving some local event ordering.
 
 \section{Implementation}
 
 Describe your model and implementation here. Refer to item 4. This may take around a page.
 
-\section{Results and Evaluation}
 
-How are you evaluating your model? What results do you have so far? What are your baselines? Refer to item 5. This may take around 0.5 pages.
+\section{Results and Evaluation}
+\label{sec:results}
+
+\paragraph{Protocol.} We use the same stratified 70/10/20 split with a fixed random seed for all models (Section~\ref{sec:dataset}). This gives us 402,541 training, 57,507 validation, and 115,013 test sessions. All results so far are based on this single split, which allows us to compare models on exactly the same test data. The validation set also contains 1,684 anomalous sessions, giving us enough examples to tune the models. We plan to add 5-fold cross-validation to see how much the results change across different splits (Section~\ref{sec:plans}).
+
+We use the validation set to choose hyperparameters and decision thresholds, then evaluate each model once on the test set. For the unsupervised models, labels are not used during training and are only used to select the decision threshold on validation.
+
+\paragraph{Metrics.} Since only 2.93\% of sessions are anomalous, accuracy alone would be misleading. A model that predicts every session as normal would already achieve about 97.1\% accuracy without detecting a single anomaly. Instead, we focus on precision, recall, and F1 for the anomalous class. We also report the area under the precision--recall curve (PR-AUC), calculated using average precision. This measures how well a model ranks anomalous sessions above normal ones across different thresholds and is more useful than ROC-AUC when the classes are highly imbalanced \cite{Saito2015}.
+
+Each model produces a continuous anomaly score. We choose the threshold that gives the highest F1 on the validation set and use that same threshold for testing. For logistic regression, we also tested regularization strengths $C$ from $\{10^{-2},\dots,10^{3}\}$ and selected $C=100$ based on validation PR-AUC. For the LSTM, we calculate a session's anomaly score using the largest $-\log p$ assigned to any of its actual next events. This means an event that the model considers highly unlikely can cause the session to be flagged as anomalous, similar to the probability cutoff used in DeepLog.
+
+\paragraph{Baseline.} As a simple baseline, we use a majority-class predictor that labels every session as normal. Since it never predicts an anomaly, both its recall and F1 are zero. Its PR-AUC is also equal to the proportion of anomalous sessions in the dataset, which is 0.029.
+
+\begin{table}[t]
+    \centering\small
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{@{}lcccc@{}}
+        \hline
+        \textbf{Model} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{PR-AUC} \\
+        \hline
+        Majority class & 0.000 & 0.000 & 0.000 & 0.029 \\
+        \hline
+        \multicolumn{5}{@{}l}{\emph{Supervised}} \\
+        Logistic Regression & 0.991 & 0.995 & 0.993 & 0.997 \\
+        \hline
+        \multicolumn{5}{@{}l}{\emph{Unsupervised}} \\
+        Isolation Forest & 0.944 & 0.567 & 0.709 & 0.714 \\
+        DeepLog LSTM & 0.476 & 0.661 & 0.553 & 0.472 \\
+        \quad top-$k$ rule ($k{=}5$) & 0.478 & 0.131 & 0.205 & 0.107 \\
+        \hline
+    \end{tabular}
+    \caption{\label{tab:results} Test-set precision (P), recall (R), F1, and PR-AUC on the anomalous class. Thresholds were chosen on validation. XGBoost is still in progress.}
+\end{table}
+
+\paragraph{Results.} Table~\ref{tab:results} summarizes our results so far. All models perform better than the majority-class baseline. We also found that the validation and test F1 and PR-AUC scores differ by less than 0.01 for each model, suggesting that the thresholds selected during validation work well on unseen data.
+
+Logistic regression performs the best by a large margin, reaching an F1 of 0.993 and a PR-AUC of 0.997. This suggests that, when labels are available, simply knowing which events occur and how often they appear is enough to distinguish almost all normal and anomalous sessions. The model does not need to consider event order to achieve strong results on this dataset.
+
+Among the unsupervised models, Isolation Forest achieves an F1 of 0.709. Its precision is high at 0.944, meaning that most sessions it flags are actually anomalous. However, its recall is only 0.567, so it misses almost half of the anomalies. One possible explanation is that some anomalous sessions have event counts similar to normal sessions, making them difficult to separate using count-based features alone.
+
+The DeepLog LSTM has a higher recall of 0.661, meaning it detects more anomalies than Isolation Forest, but its precision drops to 0.476 because it also flags many normal sessions. Looking more closely at its mistakes, we found that many missed anomalies are short, incomplete sessions such as \texttt{[E22, E5]}. These patterns appear repeatedly in the dataset, and since the unsupervised models are trained on all sessions, including the roughly 3\% that are anomalous, the LSTM can learn to treat them as normal. On the other hand, many of its false positives are longer normal sessions where events from different replicas appear in an unusual order.
+
+We also compared our probability-based anomaly score with the original DeepLog top-$k$ approach, which flags a session when the actual next event is not among the model's top $k$ predictions. With $k=5$, this approach performs much worse, reaching an F1 of only 0.205 compared with 0.553 for our probability-based score. We found that some rare error events still appear among the top few predictions, even when their predicted probabilities are low. The top-$k$ method therefore misses them, while the probability-based score can still identify them as unusual.
+
+Adding the end-of-session token also made a noticeable difference. When we removed it, the LSTM's validation F1 dropped from 0.561 to 0.500, and its PR-AUC fell from 0.469 to 0.353. This suggests that learning when a session should end helps the model detect incomplete sequences that might otherwise look normal.
+
+Overall, our results so far show a clear advantage for supervised learning on the HDFS dataset. Logistic regression performs particularly well using only event counts, while the unsupervised models struggle with anomalies that resemble normal sessions. Even the strongest unsupervised model, Isolation Forest, falls behind logistic regression by about 0.28 F1. This suggests that having labelled examples makes a substantial difference for anomaly detection in this dataset.
+
 
 \section{Feedback and Plans}
+\label{sec:plans}
 
 Write about your plans for the remainder of the project. This should include a discussion of the feedback you received from your TA, and how you plan to improve your approach. Reflect on your implementation and areas for improvement. Refer to item 6. This may be around 0.5 pages.
 
