@@ -85,14 +85,11 @@
 
 \section{Introduction}
 
-Distributed systems outputs hundreds of thousands of logs an hour, which is far more than engineers can read by hand. 
-Labels are expensive to produce for the volume of logs generated, so it is useful to know whether they are necessary for anomaly detection.
-
-Our main research question is whether unsupervised models can perform as well as
+Distributed systems output hundreds of thousands of logs an hour, which is far more than individuals analyzing them or debugging them can read by hand. 
+Labels are expensive to produce for the volume of logs generated, so it is useful to know whether they are necessary for anomaly detection. Our main research question is whether unsupervised models can perform as well as
 supervised models on this task. We compare two supervised classifiers (logistic
 regression and XGBoost) with two unsupervised detectors (Isolation Forest and a
-DeepLog-style LSTM) on the same setup, and we report
-precision, recall, F1, and PR-AUC on the anomalous class. 
+DeepLog-style LSTM) on the same setup, and we report precision, recall, F1, and PR-AUC on the anomalous class. 
 
 \section{Related Work}
 
