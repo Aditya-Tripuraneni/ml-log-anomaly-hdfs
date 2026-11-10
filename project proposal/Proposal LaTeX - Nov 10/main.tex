@@ -1,18 +1,8 @@
 \documentclass[11pt]{article}
 
-% IEEE-style numeric citations: acl.sty loads natbib with author-year and hard-codes
-% \bibliographystyle{acl_natbib}, so pass numeric options first and swap the style after.
-\PassOptionsToPackage{numbers,sort&compress}{natbib}
-\makeatletter
-\let\realbibliographystyle\bibliographystyle
-\let\bibliographystyle\@gobble
-\makeatother
-
 % Change "review" to "final" to generate the final (sometimes called camera-ready) version.
 % Change to "preprint" to generate a non-anonymous version with page numbers.
 \usepackage[]{acl}
-\let\bibliographystyle\realbibliographystyle
-\bibliographystyle{IEEEtran}
 \usepackage{times}
 \usepackage{latexsym}
 
@@ -39,7 +29,7 @@
 Distributed systems record their activity in logs, and engineers rely on these logs to
 find out when something has gone wrong. The volume of logs makes manual inspection impractical:
 the HDFS cluster in our dataset produced over 11 million log lines in under two days,
-roughly 290,000 lines per hour \cite{Zhu2020loghub,He2016}. Failures are also rare,
+roughly 290,000 lines per hour \citep{Loghub,He2016}. Failures are also rare,
 affecting only about 3\% of sessions, so they are easy to miss in the data.
 Supervised models can learn to recognize these failures, but they need
 labeled examples, and labeling logs at this scale takes time and money.
@@ -53,61 +43,62 @@ train/validation/test split.
 \section{Related Work}
 
 Log-based anomaly detection has been approached from several directions. Early methods
-represent each session by its event counts. Xu et al.~\cite{Xu2009} apply PCA to
-message-count vectors from console logs, and He et al.~\cite{He2016} compare supervised
+represent each session by its event counts. \citet{Xu2009} apply PCA to
+message-count vectors from console logs, and \citet{He2016} compare supervised
 logistic regression, decision trees, and SVMs with unsupervised PCA, invariant mining, and
 log clustering on HDFS and BGL logs. These count-vector methods are the starting point for
 our logistic regression, XGBoost, and Isolation Forest models.
 
-Deep sequence models instead learn what should happen next. DeepLog~\cite{Du2017deeplog}
+Deep sequence models instead learn what should happen next. DeepLog \citep{Du2017deeplog}
 trains an LSTM to predict the next event from the preceding ones and flags events that
-violate its predictions, which is the idea behind our LSTM. LogAnomaly~\cite{Meng2019loganomaly}
-extends it with an unsupervised LSTM that also uses event counts and semantic template
-vectors, and reports an average F1 of 0.95 on HDFS.
+violate its predictions, which is the idea behind our LSTM. LogAnomaly \citep{Meng2019loganomaly}
+builds on this idea with an unsupervised LSTM that also uses event counts and semantic
+template vectors, and reports an average F1 of 0.95 on HDFS.
 
-Comparisons between these families depend on the evaluation protocol. Chen et
-al.~\cite{Chen2021} evaluate five neural networks used by six methods (four unsupervised,
+Comparisons between these families depend on the evaluation protocol.
+\citet{chen2022experiencereportdeeplearningbased} evaluate five neural networks used by six methods (four unsupervised,
 two supervised) and conclude that ``[s]upervised methods generally achieve superior
-performance than unsupervised methods do.'' Le and Zhang~\cite{LeZhang2022} warn that
+performance than unsupervised methods do.'' \citet{LeZhang2022} warn that
 randomly shuffling sequences ``may lead to the data leakage problem in the training
-phase,'' and note that HDFS has no timestamps, so a chronological split cannot be used.
-Landauer et al.~\cite{Landauer2024} further show that HDFS is highly repetitive: its
+phase,'' and state that because the HDFS dataset ``does not contain timestamp
+information,'' a chronological split cannot be applied to it.
+\citet{Landauer2024} further show that HDFS is highly repetitive: its
 575,061 sequences reduce to ``26,814 (4.7\% of total sequences) unique sequences,'' which
 comprise ``only 666 (2.5\% of unique sequences or 0.1\% of total sequences) unique count
-vectors.'' They also find that simple detectors reach ``competitive detection rates
-compared to advanced approaches,'' indicating that ``high detection rates are easy to
-achieve in some data sets.'' Because HDFS has no timestamps, we also split sessions at
-random, so we read our results as a controlled comparison of four models on one split and
+vectors.'' They also find that simple detectors ``achieve competitive detection rates
+compared to advanced state of the art approaches,'' indicating that ``high detection
+rates are easy to achieve in some data sets.'' Because the preprocessed HDFS sessions we
+use carry no timestamps, we also split sessions at random, so we read our results as a controlled comparison of four models on one split and
 not as absolute scores comparable with published ones.
 
 \section{Dataset}
 \label{sec:dataset}
 
 \subsection{Source and Collection}
-We use the HDFS\_v1 dataset from Loghub \cite{Zhu2020loghub,LoghubRepo}. Its logs were
+We use the HDFS\_v1 dataset from Loghub \citep{Loghub,Loghub2}. Its logs were
 generated by running benchmark workloads on a 203-node Hadoop Distributed File System
-(HDFS) cluster \cite{Zhu2020loghub,Xu2009} and contain 11,175,629 log lines, about
-1.5\,GB \cite{He2016}. HDFS splits files into large blocks, replicates each block on
+(HDFS) cluster \citep{Loghub,Xu2009} and contain 11,175,629 log lines, about
+1.5\,GB \citep{He2016}. HDFS splits files into large blocks, replicates each block on
 multiple DataNodes (three by default), and records block locations on a NameNode
-\cite{Shvachko2010}. In the data, every log line contains a block ID, and most logged
+\citep{10.1109/MSST.2010.5496972}. In the data, every log line contains a block ID, and most logged
 block sizes are 64\,MB (94\% are 67,108,864 bytes). Grouping the lines by block ID
-yields one \emph{session} per block \cite{Zhu2020loghub,He2016}.
+yields one \emph{session} per block \citep{Loghub,He2016}.
 
 \subsection{Properties of the Data}
 One data point is one block session: the time-ordered sequence of log events for a
-single block, with a binary normal/anomalous label. Loghub defines 30 event templates
-(E1--E30), message types in which variable parts such as block IDs and IP addresses are
-replaced by wildcards \cite{LoghubRepo}. Only 29 occur in the sessions, in agreement
-with \cite{He2016}. Reading the template names, a typical normal session follows a
+single block, with a binary normal/anomalous label. Loghub defines 29 event templates
+(E1--E29), message types in which variable parts such as block IDs and IP addresses are
+replaced by wildcards \citep{Loghub,Loghub2}. All 29 occur in the sessions, matching the 29
+message types reported by \citet{Xu2009}. Reading the template names, a typical normal session follows a
 regular lifecycle: a block is allocated (E22), received by three DataNodes (E5, E11,
 E9), recorded by the NameNode (E26) once per replica, then deleted (E23, E21), so the
-same events repeat three times, once per replica \cite{Shvachko2010}. Anomalous
+same events repeat three times, once per replica \citep{10.1109/MSST.2010.5496972}. Anomalous
 sessions break this pattern. For example,
 \texttt{[E5, E5, E22, E7, E11, E10, E14, E7]} contains three exception events (E7, E10,
 E14) and never reaches E26.
 
 Table~\ref{tab:dataset} summarizes the data. It is highly imbalanced: 16,838 of the
-575,061 sessions are anomalous \cite{He2016}, i.e., 2.93\%, and we reproduced these
+575,061 sessions are anomalous \citep{He2016}, i.e., 2.93\%, and we reproduced these
 counts from the Loghub files. Sessions are short (median 19 events), and length does
 not separate the classes (median 19 for normal, 20 for anomalous). We found no missing
 values and no duplicate block IDs.
@@ -118,24 +109,24 @@ values and no duplicate block IDs.
     \hline
     Sessions (block IDs)           & 575,061 \\
     Anomalous sessions             & 16,838 (2.93\%) \\
-    Event types (of 30 templates)  & 29 \\
+    Event types                    & 29 \\
     Length: median / 99th pct / max & 19 / 33 / 298 \\
     \hline
   \end{tabular}
   \caption{\label{tab:dataset} Summary of the HDFS\_v1 sessions. Counts agree with
-    \cite{He2016}; length statistics are our own computation.}
+    \citet{He2016}; length statistics are our own computation.}
 \end{table}
 
 \subsection{Preprocessing}
 Our proposal planned to parse the raw logs into event templates with Drain
-\cite{He2017drain}. We found that Loghub already provides parsed event templates and
+\citep{8029742}. We found that Loghub already provides parsed event templates and
 per-block event sequences, so we use those directly. The remaining conversion is handled
 by our own loader functions, which keeps the pipeline simple. The loader (1) joins each
 block's event sequence with its label by block ID, checking the join is exactly
 one-to-one; (2) converts each stored sequence string into a list of integer event IDs;
 (3) drops the \texttt{Type}, \texttt{Latency}, and \texttt{TimeInterval} columns, where
 \texttt{Type} holds the anomaly type that Loghub provides alongside the labels
-\cite{Zhu2020loghub} and is populated for exactly the anomalous sessions, so using it
+\citep{Loghub} and is populated for exactly the anomalous sessions, so using it
 would leak the label, and the other two fall outside our model input (the event sequence
 alone); and (4) encodes labels as 0 (normal) and 1 (anomalous).
 
@@ -148,18 +139,18 @@ four models would no longer be compared on the same class balance.
 \subsection{Annotation}
 We did not annotate any data. The labels were assigned by the dataset's authors, who
 manually labeled each block session as normal or anomalous using handcrafted rules
-\cite{Zhu2020loghub}. We treat them as ground truth.
+\citep{Loghub}. We treat them as ground truth.
 
 
 \section{Features}\label{sec:features}
 
 Each block session is represented in one of two ways, depending on the model. In both cases, the model only uses the sequence of event IDs from the session (Section~\ref{sec:dataset}).
 
-\paragraph{Event-count vectors.} Logistic regression, XGBoost, and Isolation Forest use a count-based representation. For each session, we create a vector with one entry for every event type, where each value records how many times that event appears in the session. This is a common representation for HDFS session classification \cite{He2016}. The event vocabulary is built using only the training split, resulting in 29 features. If an event type appears only in the validation or test set, it is ignored so that information from those splits does not leak into training.
+\paragraph{Event-count vectors.} Logistic regression, XGBoost, and Isolation Forest use a count-based representation. For each session, we create a vector with one entry for every event type, where each value records how many times that event appears in the session. This is a common representation for HDFS session classification \citep{He2016}. The event vocabulary is built using only the training split, resulting in 29 features. If an event type appears only in the validation or test set, it is ignored so that information from those splits does not leak into training.
 
 Some events can occur many times in the same session, especially when a block is read repeatedly, which makes the raw counts highly skewed. To reduce this effect, we apply $\log(1+x)$ to each count before training the models. The main drawback of this representation is that it only captures how often events occur and completely ignores their order. This is one reason we also use an LSTM-based model.
 
-\paragraph{Ordered event sequences.} The DeepLog-style LSTM \cite{Du2017deeplog} uses the events in their original order. Each event type seen in the training data is assigned an integer token, along with an additional token for events that were never seen during training. The model is trained to predict the next event in a session. For each event, the previous 10 events are used as the input window and the current event is used as the target. At the beginning of a session, shorter windows are left-padded with a padding token.
+\paragraph{Ordered event sequences.} The DeepLog-style LSTM \citep{Du2017deeplog} uses the events in their original order. Each event type seen in the training data is assigned an integer token, along with an additional token for events that were never seen during training. The model is trained to predict the next event in a session. For each event, the previous 10 events are used as the input window and the current event is used as the target. At the beginning of a session, shorter windows are left-padded with a padding token.
 
 We also add an end-of-session token to every sequence so that the model can learn when a normal session is expected to stop. This is important for unusually short sessions such as \texttt{[E22, E5]}, where the events themselves may look normal even though the session ends too early. Each token is mapped to a 16-dimensional embedding that is learned together with the LSTM, allowing the model to learn its own representation of the event types rather than relying on manually designed features.
 
@@ -181,7 +172,7 @@ optimized with L-BFGS, which converged in 33 iterations. The regularization stre
 and the decision threshold are chosen on the validation set
 (Section~\ref{sec:results}).
 
-\paragraph{Isolation Forest.} Isolation Forest \cite{Liu2008iforest} is an
+\paragraph{Isolation Forest.} Isolation Forest \citep{4781136} is an
 unsupervised method that flags sessions that are unusual compared with the rest of the data. It builds
 random trees, each of which repeatedly splits the sessions on a random feature and
 a random value. Unusual sessions are isolated after only a few splits, while typical
@@ -197,7 +188,7 @@ the end-of-session token. The loss is cross-entropy over the next event, optimiz
 which the training loss fell from 0.545 to 0.253.
 
 \paragraph{Issues encountered.} Most of our difficulties come from the properties of the
-dataset. First, HDFS is extremely repetitive. Landauer et al.~\cite{Landauer2024} report
+dataset. First, HDFS is extremely repetitive. \citet{Landauer2024} report
 only 666 unique count vectors among its 575,061 sessions, and our copy has 589. In our
 split, 99.94\% of test sessions have a count vector that also appears in the training
 split, including 98.46\% of the anomalous ones (only 52 of 3,368 anomalous test sessions
@@ -219,7 +210,7 @@ of the 29 event types, and an event type it has never seen is treated as highly 
 
 We use the validation set to choose hyperparameters and decision thresholds, then evaluate each model once on the test set. For the unsupervised models, labels are not used during training and are only used to select the decision threshold on validation.
 
-\paragraph{Metrics.} Since only 2.93\% of sessions are anomalous, accuracy alone would be misleading. A model that predicts every session as normal would already achieve about 97.1\% accuracy without detecting a single anomaly. Instead, we focus on precision, recall, and F1 for the anomalous class. We also report the area under the precision--recall curve (PR-AUC), calculated using average precision. This measures how well a model ranks anomalous sessions above normal ones across different thresholds and is more useful than ROC-AUC when the classes are highly imbalanced \cite{Saito2015}.
+\paragraph{Metrics.} Since only 2.93\% of sessions are anomalous, accuracy alone would be misleading. A model that predicts every session as normal would already achieve about 97.1\% accuracy without detecting a single anomaly. Instead, we focus on precision, recall, and F1 for the anomalous class. We also report the area under the precision--recall curve (PR-AUC), calculated using average precision. This measures how well a model ranks anomalous sessions above normal ones across different thresholds and is more useful than ROC-AUC when the classes are highly imbalanced \citep{Saito2015}.
 
 Each model produces a continuous anomaly score. We choose the threshold that gives the highest F1 on the validation set and use that same threshold for testing. For logistic regression, we also tested regularization strengths $C$ from $\{10^{-2},\dots,10^{3}\}$ and selected $C=100$ based on validation PR-AUC. For the LSTM, we calculate a session's anomaly score using the largest $-\log p$ assigned to any of its actual next events. This means an event that the model considers highly unlikely can cause the session to be flagged as anomalous, similar to the probability cutoff used in DeepLog.
 
@@ -303,7 +294,7 @@ above, so that the differences between models are supported by more than a singl
 
 \section*{Team Contributions}
 
-\textbf{Aditya Tripuraneni} set up the repository and the shared pipeline (data loading and splits, count-vector features, evaluation metrics, and plotting), wrote the dataset download script and dataset primer, and implemented and evaluated the logistic regression baseline with its tests. He wrote the Dataset section of this report (except the splits subsection) and set up its IEEE citations. XGBoost is still in progress.
+\textbf{Aditya Tripuraneni} set up the repository and the shared pipeline (data loading and splits, count-vector features, evaluation metrics, and plotting), wrote the dataset download script and dataset primer, and implemented and evaluated the logistic regression baseline with its tests. He wrote the Dataset section of this report (except the splits subsection) and set up its citations. XGBoost is still in progress.
 
 \textbf{Vanessa Lai} implemented and evaluated the Isolation Forest detector, including its script, tests, metrics, and confusion matrix. She set up the \LaTeX{} report and wrote the Introduction, the splits subsection, the Isolation Forest paragraph of Implementation, the TA Feedback subsection, and the future plans.
 

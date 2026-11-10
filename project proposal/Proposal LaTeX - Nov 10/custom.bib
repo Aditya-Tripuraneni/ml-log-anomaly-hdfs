@@ -9,19 +9,37 @@
   doi       = {10.1145/1629575.1629587}
 }
 
-@misc{Zhu2020loghub,
-  author       = {Zhu, Jieming and He, Shilin and He, Pinjia and Liu, Jinyang and Lyu, Michael R.},
-  title        = {Loghub: A Large Collection of System Log Datasets for {AI}-driven Log Analytics},
-  howpublished = {arXiv:2008.06448},
-  year         = {2020}
+@inproceedings{Loghub,
+  author       = {Jieming Zhu and
+                  Shilin He and
+                  Pinjia He and
+                  Jinyang Liu and
+                  Michael R. Lyu},
+  title        = {Loghub: {A} Large Collection of System Log Datasets for {AI}-driven 
+                  Log Analytics},
+  booktitle    = {IEEE International Symposium on Software Reliability Engineering (ISSRE)},
+  year         = {2023},
+  pages        = {355--366},
+  doi          = {10.1109/ISSRE59848.2023.00071}
 }
 
-@misc{LoghubRepo,
-  author       = {{LogPAI}},
-  title        = {Loghub: System Log Datasets},
-  howpublished = {\url{https://github.com/logpai/loghub}},
-  note         = {Accessed: Nov. 2, 2026}
+@inproceedings{Loghub2,
+  author       = {Zhihan Jiang and 
+                  Jinyang Liu and 
+                  Junjie Huang and 
+                  Yichen Li and 
+                  Yintong Huo and 
+                  Jiazhen Gu and 
+                  Zhuangbin Chen and 
+                  Jieming Zhu and
+                  Michael R. Lyu},
+  title        = {A Large-scale Evaluation for Log Parsing Techniques: How Far are We?},
+  booktitle    = {ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA)},
+  year         = {2024},
+  pages        = {223--234},
+  doi          = {10.1145/3650212.3652123}
 }
+
 
 @inproceedings{He2016,
   author    = {He, Shilin and Zhu, Jieming and He, Pinjia and Lyu, Michael R.},
@@ -32,21 +50,34 @@
   doi       = {10.1109/ISSRE.2016.21}
 }
 
-@inproceedings{Shvachko2010,
-  author    = {Shvachko, Konstantin and Kuang, Hairong and Radia, Sanjay and Chansler, Robert},
-  title     = {The {Hadoop} Distributed File System},
-  booktitle = {Proc. IEEE 26th Symp. Mass Storage Systems and Technologies (MSST)},
-  year      = {2010},
-  pages     = {1--10}
+@inproceedings{10.1109/MSST.2010.5496972,
+author = {Shvachko, Konstantin and Kuang, Hairong and Radia, Sanjay and Chansler, Robert},
+title = {The {Hadoop} Distributed File System},
+year = {2010},
+isbn = {9781424471522},
+publisher = {IEEE Computer Society},
+address = {USA},
+url = {https://doi.org/10.1109/MSST.2010.5496972},
+doi = {10.1109/MSST.2010.5496972},
+abstract = {The Hadoop Distributed File System (HDFS) is designed to store very large data sets reliably, and to stream those data sets at high bandwidth to user applications. In a large cluster, thousands of servers both host directly attached storage and execute user application tasks. By distributing storage and computation across many servers, the resource can grow with demand while remaining economical at every size. We describe the architecture of HDFS and report on experience using HDFS to manage 25 petabytes of enterprise data at Yahoo!.},
+booktitle = {Proceedings of the 2010 IEEE 26th Symposium on Mass Storage Systems and Technologies (MSST)},
+pages = {1--10},
+numpages = {10},
+series = {MSST '10}
 }
 
-@inproceedings{He2017drain,
-  author    = {He, Pinjia and Zhu, Jieming and Zheng, Zibin and Lyu, Michael R.},
-  title     = {Drain: An Online Log Parsing Approach with Fixed Depth Tree},
-  booktitle = {Proc. IEEE Int. Conf. Web Services (ICWS)},
-  year      = {2017},
-  pages     = {33--40}
-}
+
+@INPROCEEDINGS{8029742,
+  author={He, Pinjia and Zhu, Jieming and Zheng, Zibin and Lyu, Michael R.},
+  booktitle={2017 IEEE International Conference on Web Services (ICWS)}, 
+  title={Drain: An Online Log Parsing Approach with Fixed Depth Tree}, 
+  year={2017},
+  volume={},
+  number={},
+  pages={33--40},
+  keywords={Web services;Runtime;Analytical models;Data models;Training;Anomaly detection;Log parsing;Online algorithm;Log analysis;Web service management},
+  doi={10.1109/ICWS.2017.13}}
+
 
 @inproceedings{Du2017deeplog,
   author    = {Du, Min and Li, Feifei and Zheng, Guineng and Srikumar, Vivek},
@@ -57,14 +88,18 @@
   doi       = {10.1145/3133956.3134015}
 }
 
-@inproceedings{Liu2008iforest,
-  author    = {Liu, Fei Tony and Ting, Kai Ming and Zhou, Zhi-Hua},
-  title     = {Isolation Forest},
-  booktitle = {2008 Eighth IEEE International Conference on Data Mining (ICDM)},
-  pages     = {413--422},
-  year      = {2008},
-  doi       = {10.1109/ICDM.2008.17}
-}
+@INPROCEEDINGS{4781136,
+  author={Liu, Fei Tony and Ting, Kai Ming and Zhou, Zhi-Hua},
+  booktitle={2008 Eighth IEEE International Conference on Data Mining}, 
+  title={Isolation Forest}, 
+  year={2008},
+  volume={},
+  number={},
+  pages={413--422},
+  keywords={Application software;Credit cards;Detectors;Constraint optimization;Data mining;Information technology;Laboratories;Isolation technology;Performance evaluation;Astronomy;anomaly detection;outlier detection;novelty detection;isolation forest;binary trees;model based},
+  doi={10.1109/ICDM.2008.17}
+  }
+
 
 @article{Saito2015,
   author  = {Saito, Takaya and Rehmsmeier, Marc},
@@ -86,11 +121,14 @@
   doi       = {10.24963/ijcai.2019/658}
 }
 
-@misc{Chen2021,
-  author       = {Chen, Zhuangbin and Liu, Jinyang and Gu, Wenwei and Su, Yuxin and Zhu, Jieming and Yang, Yongqiang and Lyu, Michael R.},
-  title        = {Experience Report: Deep Learning-based System Log Analysis for Anomaly Detection},
-  howpublished = {arXiv:2107.05908},
-  year         = {2021}
+@misc{chen2022experiencereportdeeplearningbased,
+      title={Experience Report: Deep Learning-based System Log Analysis for Anomaly Detection}, 
+      author={Zhuangbin Chen and Jinyang Liu and Wenwei Gu and Yuxin Su and Jieming Zhu and Yongqiang Yang and Michael R. Lyu},
+      year={2022},
+      eprint={2107.05908},
+      archivePrefix={arXiv},
+      primaryClass={cs.SE},
+      url={https://arxiv.org/abs/2107.05908}, 
 }
 
 @inproceedings{LeZhang2022,

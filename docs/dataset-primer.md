@@ -76,7 +76,7 @@ which stores it and forwards it to DataNode 2, which forwards it to DataNode 3. 
 the writer's network bandwidth, and data streams through in small packets, so the extra hops
 add little delay. Each hop logs its own "Receiving block ... src ... dest ..." line.
 
-## 4. Templates and event IDs (E1 ... E30)
+## 4. Templates and event IDs (E1 ... E29)
 
 The same *kind* of message appears millions of times with different IDs and IPs:
 
@@ -94,8 +94,8 @@ Receiving block <*> src: <*> dest: <*>
 Each template gets a short label, its **event ID**: this one is **E5**. So `E5` simply
 means "a DataNode started receiving a block". Turning raw lines into templates is called log
 parsing (tools such as Drain do this). We did not run a parser ourselves: Loghub already
-provides the parsed templates and per-block event sequences. 30 templates are defined
-(E1-E30), and **E30 never occurs**, so the data uses 29 event types.
+provides the parsed templates and per-block event sequences. 29 templates are defined
+(E1-E29), and all 29 occur in the sessions, so the data uses 29 event types.
 
 An event ID is a **message category**, not a machine type: some come from DataNodes (E5), some
 from the NameNode (E22, E26). The categories come from log parsing, done with fixed rules
@@ -177,7 +177,7 @@ more columns.
 | `anomaly_label.csv` | block ID and Normal/Anomaly label |
 | `Event_traces.csv` | block ID, the ordered event sequence, plus extra columns (see below) |
 | `Event_occurrence_matrix.csv` | the count vector per session |
-| `HDFS.log_templates.csv` | the E1-E30 template list |
+| `HDFS.log_templates.csv` | the E1-E29 template list |
 | `HDFS.npz` | the same sessions as NumPy arrays |
 
 `HDFS.log` (1.5 GB) is the full raw log.
