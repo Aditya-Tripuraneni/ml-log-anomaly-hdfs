@@ -18,9 +18,6 @@
 
 % For proper rendering and hyphenation of words containing Latin characters (including in bib files)
 \usepackage[T1]{fontenc}
-% For Vietnamese characters
-% \usepackage[T5]{fontenc}
-% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
 
 % This assumes your files are encoded as UTF8
 \usepackage[utf8]{inputenc}
@@ -28,68 +25,22 @@
 \usepackage{inconsolata}
 \usepackage{graphicx}
 
-% If the title and author information does not fit in the area allocated, uncomment the following
-%
-%\setlength\titlebox{<dim>}
-%
-% and set <dim> to something 5cm or larger.
-
-\title{Group X Progress Report:\\My Group's Project Name}
+\title{Group 07 Progress Report:\\Log-Based Anomaly Detection on HDFS:\\A Supervised vs.\ Unsupervised Comparison}
 
 
 \author{Aditya Tripuraneni, Vanessa Lai, Harmanpreet Singh Sagar \\
   \texttt{\{tripuraa,laiv3,sagarh\}@mcmaster.ca} }
 
-%\author{
-%  \textbf{First Author\textsuperscript{1}},
-%  \textbf{Second Author\textsuperscript{1,2}},
-%  \textbf{Third T. Author\textsuperscript{1}},
-%  \textbf{Fourth Author\textsuperscript{1}},
-%\\
-%  \textbf{Fifth Author\textsuperscript{1,2}},
-%  \textbf{Sixth Author\textsuperscript{1}},
-%  \textbf{Seventh Author\textsuperscript{1}},
-%  \textbf{Eighth Author \textsuperscript{1,2,3,4}},
-%\\
-%  \textbf{Ninth Author\textsuperscript{1}},
-%  \textbf{Tenth Author\textsuperscript{1}},
-%  \textbf{Eleventh E. Author\textsuperscript{1,2,3,4,5}},
-%  \textbf{Twelfth Author\textsuperscript{1}},
-%\\
-%  \textbf{Thirteenth Author\textsuperscript{3}},
-%  \textbf{Fourteenth F. Author\textsuperscript{2,4}},
-%  \textbf{Fifteenth Author\textsuperscript{1}},
-%  \textbf{Sixteenth Author\textsuperscript{1}},
-%\\
-%  \textbf{Seventeenth S. Author\textsuperscript{4,5}},
-%  \textbf{Eighteenth Author\textsuperscript{3,4}},
-%  \textbf{Nineteenth N. Author\textsuperscript{2,5}},
-%  \textbf{Twentieth Author\textsuperscript{1}}
-%\\
-%\\
-%  \textsuperscript{1}Affiliation 1,
-%  \textsuperscript{2}Affiliation 2,
-%  \textsuperscript{3}Affiliation 3,
-%  \textsuperscript{4}Affiliation 4,
-%  \textsuperscript{5}Affiliation 5
-%\\
-%  \small{
-%    \textbf{Correspondence:} \href{mailto:email@domain}{email@domain}
-%  }
-%}
-
 \begin{document}
 \maketitle
-% \begin{abstract}
-% \end{abstract}
 
 \section{Introduction}
 
 Distributed systems record their activity in logs, and engineers rely on these logs to
-find out when something has gone wrong. The volume of logsmakes manual inspection impractical:
+find out when something has gone wrong. The volume of logs makes manual inspection impractical:
 the HDFS cluster in our dataset produced over 11 million log lines in under two days,
 roughly 290,000 lines per hour \cite{Zhu2020loghub,He2016}. Failures are also rare,
-affecting only about 3\% of sessions, so they are very hidden in the data.
+affecting only about 3\% of sessions, so they are easy to miss in the data.
 Supervised models can learn to recognize these failures, but they need
 labeled examples, and labeling logs at this scale takes time and money.
 This raises the question of whether labels are necessary at all. Our main research question
@@ -101,7 +52,33 @@ train/validation/test split.
 
 \section{Related Work}
 
-Here, talk about the related work you encountered for your approach. Cite at least 5 references. Refer to item 2. No one has done exactly your task? Write about the most similar thing you can find. This should be around 0.25-0.5 pages.
+Log-based anomaly detection has been approached from several directions. Early methods
+represent each session by its event counts. Xu et al.~\cite{Xu2009} apply PCA to
+message-count vectors from console logs, and He et al.~\cite{He2016} compare supervised
+logistic regression, decision trees, and SVMs with unsupervised PCA, invariant mining, and
+log clustering on HDFS and BGL logs. These count-vector methods are the starting point for
+our logistic regression, XGBoost, and Isolation Forest models.
+
+Deep sequence models instead learn what should happen next. DeepLog~\cite{Du2017deeplog}
+trains an LSTM to predict the next event from the preceding ones and flags events that
+violate its predictions, which is the idea behind our LSTM. LogAnomaly~\cite{Meng2019loganomaly}
+extends it with an unsupervised LSTM that also uses event counts and semantic template
+vectors, and reports an average F1 of 0.95 on HDFS.
+
+Comparisons between these families depend on the evaluation protocol. Chen et
+al.~\cite{Chen2021} evaluate five neural networks used by six methods (four unsupervised,
+two supervised) and conclude that ``[s]upervised methods generally achieve superior
+performance than unsupervised methods do.'' Le and Zhang~\cite{LeZhang2022} warn that
+randomly shuffling sequences ``may lead to the data leakage problem in the training
+phase,'' and note that HDFS has no timestamps, so a chronological split cannot be used.
+Landauer et al.~\cite{Landauer2024} further show that HDFS is highly repetitive: its
+575,061 sequences reduce to ``26,814 (4.7\% of total sequences) unique sequences,'' which
+comprise ``only 666 (2.5\% of unique sequences or 0.1\% of total sequences) unique count
+vectors.'' They also find that simple detectors reach ``competitive detection rates
+compared to advanced approaches,'' indicating that ``high detection rates are easy to
+achieve in some data sets.'' Because HDFS has no timestamps, we also split sessions at
+random, so we read our results as a controlled comparison of four models on one split and
+not as absolute scores comparable with published ones.
 
 \section{Dataset}
 \label{sec:dataset}
@@ -190,7 +167,19 @@ We also add an end-of-session token to every sequence so that the model can lear
 
 \section{Implementation}
 
-Describe your model and implementation here. Refer to item 4. This may take around a page.
+\paragraph{Logistic regression.} Our supervised baseline is the scikit-learn implementation
+of logistic regression, applied to the 29-dimensional event-count vectors
+(Section~\ref{sec:features}). Each count $x$ is first replaced by $\log(1+x)$, so that a
+few very large counts, such as a block that is read hundreds of times, do not dominate the
+others. The model outputs the probability that a session is anomalous. It is trained by
+minimizing the class-weighted log loss with an L2 penalty,
+$\frac{1}{2}\|w\|^2 + C\sum_i s_i\,\ell_i$, where $\ell_i$ is the log loss of
+session $i$ and $s_i$ is the weight of its class. We use scikit-learn's ``balanced''
+weights, which are inversely proportional to class frequency: an anomalous training
+session has weight 17.1 and a normal one 0.52, about 33 times less. The objective is
+optimized with L-BFGS, which converged in 33 iterations. The regularization strength $C$
+and the decision threshold are chosen on the validation set
+(Section~\ref{sec:results}).
 
 \paragraph{Isolation Forest.} Isolation Forest \cite{Liu2008iforest} is an
 unsupervised method that flags sessions that are unusual compared with the rest of the data. It builds
@@ -200,6 +189,27 @@ sessions need many, so a short average path length across the trees indicates an
 anomaly. We use the scikit-learn implementation with 100 trees, trained on the
 $\log(1+x)$ event-count vectors of the training split. Labels are used only afterwards,
 to choose a decision threshold on the validation split and to evaluate the model.
+
+\paragraph{DeepLog-style LSTM.} The LSTM (input described in Section~\ref{sec:features}) has
+two stacked layers with hidden size 64 and is trained to predict each next event, including
+the end-of-session token. The loss is cross-entropy over the next event, optimized with Adam
+(learning rate $10^{-3}$, batch size 1024) for 10 epochs on 50,000 training sessions, during
+which the training loss fell from 0.545 to 0.253.
+
+\paragraph{Issues encountered.} Most of our difficulties come from the properties of the
+dataset. First, HDFS is extremely repetitive. Landauer et al.~\cite{Landauer2024} report
+only 666 unique count vectors among its 575,061 sessions, and our copy has 589. In our
+split, 99.94\% of test sessions have a count vector that also appears in the training
+split, including 98.46\% of the anomalous ones (only 52 of 3,368 anomalous test sessions
+have a pattern not seen in training). Count-based supervised models can therefore do very
+well largely by recognizing patterns they have already seen, which helps explain the high
+logistic regression scores. We read our results as a comparison between models and not as a
+guarantee for new logs. Second, anomalies are rare (2.93\%), which led us to use class
+weights, F1 thresholds tuned on validation, and PR-AUC instead of accuracy. Third, the
+unsupervised models never see labels by design, so they cannot filter out the roughly
+3\% of anomalous sessions in their training data. Finally, the LSTM is our most expensive
+model, so we trained it on a random subset of 50,000 sessions (272 seconds). It saw only 28
+of the 29 event types, and an event type it has never seen is treated as highly surprising.
 
 
 \section{Results and Evaluation}
@@ -236,17 +246,27 @@ Each model produces a continuous anomaly score. We choose the threshold that giv
     \caption{\label{tab:results} Test-set precision (P), recall (R), F1, and PR-AUC on the anomalous class. Thresholds were chosen on validation. XGBoost is still in progress.}
 \end{table}
 
-\paragraph{Results.} Table~\ref{tab:results} summarizes our results so far. All models perform better than the majority-class baseline. We also found that the validation and test F1 and PR-AUC scores differ by less than 0.01 for each model, suggesting that the thresholds selected during validation work well on unseen data.
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.32\textwidth]{figures/logistic_regression_confusion_matrix.png}\hfill
+    \includegraphics[width=0.32\textwidth]{figures/isolation_forest_confusion_matrix.png}\hfill
+    \includegraphics[width=0.32\textwidth]{figures/deeplog_lstm_confusion_matrix.png}
+    \caption{\label{fig:confusion} Test-set confusion matrices (115,013 sessions) for logistic regression, Isolation Forest, and the DeepLog LSTM, at the thresholds chosen on validation. Each cell shows the number of sessions and its share of the actual class (row), so the rare anomalous row stays readable next to the large normal row.}
+\end{figure*}
+
+\paragraph{Results.} Table~\ref{tab:results} summarizes our results so far. All models perform better than the majority-class baseline. We also found that the validation and test F1 and PR-AUC scores differ by less than 0.01 for each of the three models (the top-$k$ variant differs by about 0.02 in F1), suggesting that the thresholds selected during validation work well on unseen data.
 
 Logistic regression performs the best by a large margin, reaching an F1 of 0.993 and a PR-AUC of 0.997. This suggests that, when labels are available, simply knowing which events occur and how often they appear is enough to distinguish almost all normal and anomalous sessions. The model does not need to consider event order to achieve strong results on this dataset.
 
 Among the unsupervised models, Isolation Forest achieves an F1 of 0.709. Its precision is high at 0.944, meaning that most sessions it flags are actually anomalous. However, its recall is only 0.567, so it misses almost half of the anomalies. One possible explanation is that some anomalous sessions have event counts similar to normal sessions, making them difficult to separate using count-based features alone.
 
-The DeepLog LSTM has a higher recall of 0.661, meaning it detects more anomalies than Isolation Forest, but its precision drops to 0.476 because it also flags many normal sessions. Looking more closely at its mistakes, we found that many missed anomalies are short, incomplete sessions such as \texttt{[E22, E5]}. These patterns appear repeatedly in the dataset, and since the unsupervised models are trained on all sessions, including the roughly 3\% that are anomalous, the LSTM can learn to treat them as normal. On the other hand, many of its false positives are longer normal sessions where events from different replicas appear in an unusual order.
+The DeepLog LSTM has a higher recall of 0.661, meaning it detects more anomalies than Isolation Forest, but its precision drops to 0.476 because it also flags many normal sessions. Looking more closely at its mistakes, we found that many missed anomalies are short, incomplete sessions such as \texttt{[E22, E5]}. These patterns appear repeatedly in the dataset, and since the unsupervised models are trained without removing the roughly 3\% of sessions that are anomalous (Isolation Forest on all 402,541 training sessions, the LSTM on a random subset of 50,000), the LSTM can learn to treat them as normal. On the other hand, many of its false positives are longer normal sessions where events from different replicas appear in an unusual order.
 
 We also compared our probability-based anomaly score with the original DeepLog top-$k$ approach, which flags a session when the actual next event is not among the model's top $k$ predictions. With $k=5$, this approach performs much worse, reaching an F1 of only 0.205 compared with 0.553 for our probability-based score. We found that some rare error events still appear among the top few predictions, even when their predicted probabilities are low. The top-$k$ method therefore misses them, while the probability-based score can still identify them as unusual.
 
 Adding the end-of-session token also made a noticeable difference. When we removed it, the LSTM's validation F1 dropped from 0.561 to 0.500, and its PR-AUC fell from 0.469 to 0.353. This suggests that learning when a session should end helps the model detect incomplete sequences that might otherwise look normal.
+
+Figure~\ref{fig:confusion} shows how each model's errors are split. Of the 3,368 anomalous test sessions, logistic regression misses only 16 and raises 29 false alarms among 111,645 normal sessions. Isolation Forest raises just 113 false alarms but misses 1,458 anomalies, whereas the LSTM misses fewer anomalies (1,142) at the cost of 2,453 false alarms. The two unsupervised models therefore fail in opposite ways: Isolation Forest is conservative, while the LSTM trades many false alarms for extra recall.
 
 Overall, our results so far show a clear advantage for supervised learning on the HDFS dataset. Logistic regression performs particularly well using only event counts, while the unsupervised models struggle with anomalies that resemble normal sessions. Even the strongest unsupervised model, Isolation Forest, falls behind logistic regression by about 0.28 F1. This suggests that having labelled examples makes a substantial difference for anomaly detection in this dataset.
 
@@ -265,92 +285,30 @@ the two models disagree. Because McNemar's test only tells us whether two models
 differ, we will also report 95\% confidence intervals for F1 and PR-AUC to show how
 large the difference is.
 
+\subsection{Reflections and Next Steps}
+Our results so far show that the supervised baseline is hard to beat and that the
+unsupervised models, especially the LSTM, leave room for improvement. Our first priorities
+are to implement XGBoost, so that both families have two models on the same split, and to
+run the label-fraction experiment from our proposal, retraining the supervised models on
+1\%, 10\%, and 100\% of the labels to measure how much the labels are worth. For the LSTM,
+we trained on only 50,000 sessions that still contain anomalies, so we plan to train it on
+more of the training split and tune its window and hidden size on validation. We also plan
+to try TF-IDF and $n$-gram features for the count-based models
+(Section~\ref{sec:features}). Because HDFS has so few unique count vectors, we will also
+report how each model does on test sessions whose pattern was not seen in training (only 52
+anomalous test sessions), so the results do not rest only on repeated patterns. Finally, we
+will add the 5-fold cross-validation, McNemar's tests, and confidence intervals described
+above, so that the differences between models are supported by more than a single split.
 
-\subsection{Tables and figures}
-
-See Table~\ref{citation-guide} for an example of a table and its caption.
-See Figure~\ref{fig:experiments} for an example of a figure and its caption.
-
-
-\begin{figure}[t]
-  \includegraphics[width=\columnwidth]{example-image-golden}
-  \caption{A figure with a caption that runs for more than one line.
-    Example image is usually available through the \texttt{mwe} package
-    without even mentioning it in the preamble.}
-  \label{fig:experiments}
-\end{figure}
-
-\begin{figure*}[t]
-  \includegraphics[width=0.48\linewidth]{example-image-a} \hfill
-  \includegraphics[width=0.48\linewidth]{example-image-b}
-  \caption {A minimal working example to demonstrate how to place
-    two images side-by-side.}
-\end{figure*}
-
-
-\subsection{Citations}
-
-\begin{table*}
-  \centering
-  \begin{tabular}{lll}
-    \hline
-    \textbf{Output}           & \textbf{natbib command} & \textbf{ACL only command} \\
-    \hline
-    \citep{Gusfield:97}       & \verb|\citep|           &                           \\
-    \citealp{Gusfield:97}     & \verb|\citealp|         &                           \\
-    \citet{Gusfield:97}       & \verb|\citet|           &                           \\
-    \citeyearpar{Gusfield:97} & \verb|\citeyearpar|     &                           \\
-    \citeposs{Gusfield:97}    &                         & \verb|\citeposs|          \\
-    \hline
-  \end{tabular}
-  \caption{\label{citation-guide}
-    Citation commands supported by the style file.
-  }
-\end{table*}
-
-Table~\ref{citation-guide} shows the syntax supported by the style files.
-We encourage you to use the natbib styles.
-You can use the command \verb|\citet| (cite in text) to get ``author (year)'' citations, like this citation to a paper by \citet{Gusfield:97}.
-You can use the command \verb|\citep| (cite in parentheses) to get ``(author, year)'' citations \citep{Gusfield:97}.
-You can use the command \verb|\citealp| (alternative cite without parentheses) to get ``author, year'' citations, which is useful for using citations within parentheses (e.g. \citealp{Gusfield:97}).
-
-\subsection{References}
-
-\nocite{Ando2005,andrew2007scalable,rasooli-tetrault-2015}
-
-Many websites where you can find academic papers also allow you to export a bib file for citation or bib formatted entry. Copy this into the \texttt{custom.bib} and you will be able to cite the paper in the \LaTeX{}. You can remove the example entries.
-
-\subsection{Equations}
-
-An example equation is shown below:
-\begin{equation}
-  \label{eq:example}
-  A = \pi r^2
-\end{equation}
-
-Labels for equation numbers, sections, subsections, figures and tables
-are all defined with the \verb|\label{label}| command and cross references
-to them are made with the \verb|\ref{label}| command.
-This an example cross-reference to Equation~\ref{eq:example}. You can also write equations inline, like this: $A=\pi r^2$.
-
-
-% \section*{Limitations}
 
 \section*{Team Contributions}
 
-Write in this section a few sentences describing the contributions of each team member. What did each member work on? Refer to item 7.
+\textbf{Aditya Tripuraneni} set up the repository and the shared pipeline (data loading and splits, count-vector features, evaluation metrics, and plotting), wrote the dataset download script and dataset primer, and implemented and evaluated the logistic regression baseline with its tests. He wrote the Dataset section of this report (except the splits subsection) and set up its IEEE citations. XGBoost is still in progress.
 
-% Bibliography entries for the entire Anthology, followed by custom entries
-%\bibliography{custom,anthology-overleaf-1,anthology-overleaf-2}
+\textbf{Vanessa Lai} implemented and evaluated the Isolation Forest detector, including its script, tests, metrics, and confusion matrix. She set up the \LaTeX{} report and wrote the Introduction, the splits subsection, the Isolation Forest paragraph of Implementation, the TA Feedback subsection, and the future plans.
 
-% Custom bibliography entries only
+\textbf{Harmanpreet Singh Sagar} implemented and evaluated the DeepLog-style LSTM on ordered event sequences, including its script, tests, metrics, and confusion matrix, and added the sequence-feature code. He wrote the Features and Results and Evaluation sections of this report.
+
 \bibliography{custom}
-
-% \appendix
-
-% \section{Example Appendix}
-% \label{sec:appendix}
-
-% This is an appendix.
 
 \end{document}
