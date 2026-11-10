@@ -65,6 +65,9 @@ models/checkpoints/
 *.run.xml
 *-blx.bib
 
+# Node (not used in this project)
+node_modules/
+
 # OS / editors
 .DS_Store
 Thumbs.db
