@@ -92,14 +92,15 @@ Receiving block <*> src: <*> dest: <*>
 ```
 
 Each template gets a short label, its **event ID**: this one is **E5**. So `E5` simply
-means "a DataNode started receiving a block". Parsing raw lines into templates is done by a
-tool called Drain. 30 templates are defined (E1-E30), and **E30 never occurs**, so the data
-uses 29 event types.
+means "a DataNode started receiving a block". Turning raw lines into templates is called log
+parsing (tools such as Drain do this). We did not run a parser ourselves: Loghub already
+provides the parsed templates and per-block event sequences. 30 templates are defined
+(E1-E30), and **E30 never occurs**, so the data uses 29 event types.
 
 An event ID is a **message category**, not a machine type: some come from DataNodes (E5), some
-from the NameNode (E22, E26). Drain creates the categories with fixed rules before any model
-runs. The models do not learn the categories, they learn patterns over them. This shrinks
-millions of different-looking lines into 29 types.
+from the NameNode (E22, E26). The categories come from log parsing, done with fixed rules
+before any model runs. The models do not learn the categories, they learn patterns over them.
+This shrinks millions of different-looking lines into 29 types.
 
 Events used in the example below:
 
