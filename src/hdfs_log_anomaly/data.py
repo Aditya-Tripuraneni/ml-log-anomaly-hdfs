@@ -1,7 +1,7 @@
 """Shared data loading and the single train/val/test split used by every model.
 
-Owner: Shared. Do not change split logic without telling the team,
-since all models must be compared on identical splits.
+Do not change the split logic without telling the team, since all models must be compared
+on identical splits.
 """
 
 from pathlib import Path

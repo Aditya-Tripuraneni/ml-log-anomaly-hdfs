@@ -6,9 +6,9 @@ results at team meetings. Everyone reviews someone else's work.
 | Owner | Models / work | Status |
 |---|---|---|
 | Aditya | Logistic Regression (supervised) | Done: model, script, tests, metrics, confusion matrix |
-| Aditya | XGBoost (supervised) | Not started (`models/xgboost_model.py` is a stub) |
+| Aditya | XGBoost (supervised) | Done: model, script, tests, metrics, confusion matrix |
 | Aditya | Shared pipeline (`data.py`, `features.py`, `evaluation.py`, `plots.py`) | Done |
-| Aditya | Label-fraction experiment (1% / 10% / 100%) | Not started |
+| Aditya | Label-fraction experiment (1% / 10% / 100%) | Done: helper, script, tests, metrics |
 | Vanessa | Isolation Forest (unsupervised) | Done: model, script, tests, metrics, confusion matrix |
 | Harmanpreet | DeepLog-style LSTM (unsupervised) | Done: model, script, tests, metrics, confusion matrix (trained on a random 50,000-session subset; the PCA fallback was not needed) |
 
@@ -20,7 +20,7 @@ Teammates: Harmanpreet Singh Sagar, Vanessa Lai.
 - Set up the repository: uv project, `src/` layout, docs, `.gitignore`, CPU-only torch and `xgboost-cpu`.
 - Built the shared pipeline: data loading and the stratified 70/10/20 split (`data.py`), count-vector features (`features.py`), metrics and the F1 threshold helper (`evaluation.py`), and the confusion-matrix plot (`plots.py`), with tests.
 - Wrote the dataset download script and the dataset primer.
-- Implemented and evaluated the Logistic Regression baseline.
+- Implemented and evaluated the Logistic Regression baseline and the XGBoost model.
 - Wrote the report's Dataset section (source, properties, preprocessing, annotation) and set up its IEEE citations.
 - Wrote the report's Related Work, the logistic regression paragraph of Implementation and the issues-encountered paragraph.
 

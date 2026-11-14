@@ -1,6 +1,6 @@
 """Shared evaluation: every model reports the same metrics on the anomalous class.
 
-Owner: shared. Accuracy is deliberately excluded (predicting all-normal scores ~97%).
+Accuracy is deliberately excluded (predicting all-normal scores ~97%).
 """
 
 import numpy as np

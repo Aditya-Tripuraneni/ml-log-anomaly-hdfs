@@ -22,8 +22,8 @@ detectors on the same pipeline.
 3. Unsupervised models never see labels in training. Labels are for evaluation only.
    Unsupervised thresholds are tuned on the validation set only.
 4. Report precision, recall, F1, PR-AUC on the anomalous class. Never accuracy.
-5. Supervised models use class weighting. Planned, not done yet: also retrain them on
-   1%, 10%, 100% of labels.
+5. Supervised models use class weighting. They are also retrained on 1%, 10% and 100% of
+   the training labels (`scripts/run_label_fraction.py`).
 
 ## Features
 
@@ -43,4 +43,5 @@ detectors on the same pipeline.
 
 Training data: logistic regression and Isolation Forest train on all 402,541 training
 sessions. The LSTM trains on a random subset of 50,000 of them (the subset is not filtered, so
-it still contains the usual ~3% anomalous sessions). XGBoost is not implemented yet.
+it still contains the usual ~3% anomalous sessions). XGBoost trains on all 402,541 training
+sessions, with `scale_pos_weight` set to the negative/positive ratio of the training split.

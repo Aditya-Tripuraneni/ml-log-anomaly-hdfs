@@ -38,7 +38,8 @@ is whether unsupervised models, which train without needing labels, can detect a
 well as supervised models. We will compare two supervised classifiers
 (logistic regression and XGBoost) with two unsupervised detectors (Isolation Forest
 and a DeepLog-style LSTM) using the same preprocessing and the same
-train/validation/test split.
+train/validation/test split. The unsupervised models train without labels, but, as in
+most log-anomaly work, we use the validation labels to choose their decision threshold.
 
 \section{Related Work}
 
@@ -148,7 +149,7 @@ Each block session is represented in one of two ways, depending on the model. In
 
 \paragraph{Event-count vectors.} Logistic regression, XGBoost, and Isolation Forest use a count-based representation. For each session, we create a vector with one entry for every event type, where each value records how many times that event appears in the session. This is a common representation for HDFS session classification \citep{He2016}. The event vocabulary is built using only the training split, resulting in 29 features. If an event type appears only in the validation or test set, it is ignored so that information from those splits does not leak into training.
 
-Some events can occur many times in the same session, especially when a block is read repeatedly, which makes the raw counts highly skewed. To reduce this effect, we apply $\log(1+x)$ to each count before training the models. The main drawback of this representation is that it only captures how often events occur and completely ignores their order. This is one reason we also use an LSTM-based model.
+Some events can occur many times in the same session, especially when a block is read repeatedly, which makes the raw counts highly skewed. To reduce this effect, we apply $\log(1+x)$ to each count before training logistic regression and Isolation Forest. XGBoost uses the raw counts, because decision trees split on thresholds and are not affected by this rescaling. The main drawback of this representation is that it only captures how often events occur and completely ignores their order. This is one reason we also use an LSTM-based model.
 
 \paragraph{Ordered event sequences.} The DeepLog-style LSTM \citep{Du2017deeplog} uses the events in their original order. Each event type seen in the training data is assigned an integer token, along with an additional token for events that were never seen during training. The model is trained to predict the next event in a session. For each event, the previous 10 events are used as the input window and the current event is used as the target. At the beginning of a session, shorter windows are left-padded with a padding token.
 
@@ -172,6 +173,18 @@ optimized with L-BFGS, which converged in 33 iterations. The regularization stre
 and the decision threshold are chosen on the validation set
 (Section~\ref{sec:results}).
 
+\paragraph{XGBoost.} Our second supervised model is gradient-boosted decision trees
+(XGBoost) \citep{Chen2016xgboost} on the same count vectors. Because trees split on
+thresholds, we use the raw counts without the $\log(1+x)$ scaling. A tree can separate
+``exactly three'' of an event from ``fewer'' and ``more'', which is the replica pattern a
+linear model cannot express (Section~\ref{sec:results}). The model is trained by gradient
+boosting: each new tree is fitted to correct the errors of the previous ones under the
+log loss. To handle the imbalance, anomalous sessions are weighted by the ratio of normal
+to anomalous training sessions (33.15), the same weighting as logistic regression. We use a
+learning rate of 0.1 and choose the tree depth (3, 6, or 9) and the number of trees (100 or
+300) on validation PR-AUC, which selected depth 6 with 300 trees. The decision threshold is
+again chosen on the validation set.
+
 \paragraph{Isolation Forest.} Isolation Forest \citep{4781136} is an
 unsupervised method that flags sessions that are unusual compared with the rest of the data. It builds
 random trees, each of which repeatedly splits the sessions on a random feature and
@@ -192,10 +205,11 @@ dataset. First, HDFS is extremely repetitive. \citet{Landauer2024} report
 only 666 unique count vectors among its 575,061 sessions, and our copy has 589. In our
 split, 99.94\% of test sessions have a count vector that also appears in the training
 split, including 98.46\% of the anomalous ones (only 52 of 3,368 anomalous test sessions
-have a pattern not seen in training). Count-based supervised models can therefore do very
-well largely by recognizing patterns they have already seen, which helps explain the high
-logistic regression scores. We read our results as a comparison between models and not as a
-guarantee for new logs. Second, anomalies are rare (2.93\%), which led us to use class
+have a pattern not seen in training). This repetition makes the task easy for count-based
+supervised models, although they do not only memorize: on the 64 test sessions whose count
+vector is unseen in training (a small sample), logistic regression and XGBoost still catch
+49 and 50 of the 52 anomalies. We read our results as a comparison between models and not
+as a guarantee for new logs. Second, anomalies are rare (2.93\%), which led us to use class
 weights, F1 thresholds tuned on validation, and PR-AUC instead of accuracy. Third, the
 unsupervised models never see labels by design, so they cannot filter out the roughly
 3\% of anomalous sessions in their training data. Finally, the LSTM is our most expensive
@@ -212,7 +226,7 @@ We use the validation set to choose hyperparameters and decision thresholds, the
 
 \paragraph{Metrics.} Since only 2.93\% of sessions are anomalous, accuracy alone would be misleading. A model that predicts every session as normal would already achieve about 97.1\% accuracy without detecting a single anomaly. Instead, we focus on precision, recall, and F1 for the anomalous class. We also report the area under the precision--recall curve (PR-AUC), calculated using average precision. This measures how well a model ranks anomalous sessions above normal ones across different thresholds and is more useful than ROC-AUC when the classes are highly imbalanced \citep{Saito2015}.
 
-Each model produces a continuous anomaly score. We choose the threshold that gives the highest F1 on the validation set and use that same threshold for testing. For logistic regression, we also tested regularization strengths $C$ from $\{10^{-2},\dots,10^{3}\}$ and selected $C=100$ based on validation PR-AUC. For the LSTM, we calculate a session's anomaly score using the largest $-\log p$ assigned to any of its actual next events. This means an event that the model considers highly unlikely can cause the session to be flagged as anomalous, similar to the probability cutoff used in DeepLog.
+Each model produces a continuous anomaly score. We choose the threshold that gives the highest F1 on the validation set and use that same threshold for testing. For logistic regression, we also tested regularization strengths $C$ from $\{10^{-2},\dots,10^{3}\}$ and selected $C=100$ based on validation PR-AUC. For XGBoost, we tested tree depths of 3, 6, and 9 with 100 or 300 trees and selected depth 6 with 300 trees in the same way. For the LSTM, we calculate a session's anomaly score using the largest $-\log p$ assigned to any of its actual next events. This means an event that the model considers highly unlikely can cause the session to be flagged as anomalous, similar to the probability cutoff used in DeepLog.
 
 \paragraph{Baseline.} As a simple baseline, we use a majority-class predictor that labels every session as normal. Since it never predicts an anomaly, both its recall and F1 are zero. Its PR-AUC is also equal to the proportion of anomalous sessions in the dataset, which is 0.029.
 
@@ -227,6 +241,7 @@ Each model produces a continuous anomaly score. We choose the threshold that giv
         \hline
         \multicolumn{5}{@{}l}{\emph{Supervised}} \\
         Logistic Regression & 0.991 & 0.995 & 0.993 & 0.997 \\
+        XGBoost & 0.996 & 0.999 & 0.998 & 1.000 \\
         \hline
         \multicolumn{5}{@{}l}{\emph{Unsupervised}} \\
         Isolation Forest & 0.944 & 0.567 & 0.709 & 0.714 \\
@@ -234,20 +249,23 @@ Each model produces a continuous anomaly score. We choose the threshold that giv
         \quad top-$k$ rule ($k{=}5$) & 0.478 & 0.131 & 0.205 & 0.107 \\
         \hline
     \end{tabular}
-    \caption{\label{tab:results} Test-set precision (P), recall (R), F1, and PR-AUC on the anomalous class. Thresholds were chosen on validation. XGBoost is still in progress.}
+    \caption{\label{tab:results} Test-set precision (P), recall (R), F1, and PR-AUC on the anomalous class. Thresholds were chosen on validation.}
 \end{table}
 
 \begin{figure*}[t]
     \centering
-    \includegraphics[width=0.32\textwidth]{figures/logistic_regression_confusion_matrix.png}\hfill
-    \includegraphics[width=0.32\textwidth]{figures/isolation_forest_confusion_matrix.png}\hfill
-    \includegraphics[width=0.32\textwidth]{figures/deeplog_lstm_confusion_matrix.png}
-    \caption{\label{fig:confusion} Test-set confusion matrices (115,013 sessions) for logistic regression, Isolation Forest, and the DeepLog LSTM, at the thresholds chosen on validation. Each cell shows the number of sessions and its share of the actual class (row), so the rare anomalous row stays readable next to the large normal row.}
+    \includegraphics[width=0.33\textwidth]{figures/logistic_regression_confusion_matrix.png}\hspace{0.04\textwidth}
+    \includegraphics[width=0.33\textwidth]{figures/xgboost_confusion_matrix.png}\\[2pt]
+    \includegraphics[width=0.33\textwidth]{figures/isolation_forest_confusion_matrix.png}\hspace{0.04\textwidth}
+    \includegraphics[width=0.33\textwidth]{figures/deeplog_lstm_confusion_matrix.png}
+    \caption{\label{fig:confusion} Test-set confusion matrices (115,013 sessions) for the two supervised models (top: logistic regression, XGBoost) and the two unsupervised models (bottom: Isolation Forest, DeepLog LSTM), at the thresholds chosen on validation. Each cell shows the number of sessions and its share of the actual class (row), so the rare anomalous row stays readable next to the large normal row.}
 \end{figure*}
 
-\paragraph{Results.} Table~\ref{tab:results} summarizes our results so far. All models perform better than the majority-class baseline. We also found that the validation and test F1 and PR-AUC scores differ by less than 0.01 for each of the three models (the top-$k$ variant differs by about 0.02 in F1), suggesting that the thresholds selected during validation work well on unseen data.
+\paragraph{Results.} Table~\ref{tab:results} summarizes our results so far. All models perform better than the majority-class baseline. We also found that the validation and test F1 and PR-AUC scores differ by less than 0.01 for each of the four models (the top-$k$ variant differs by about 0.02 in F1), suggesting that the thresholds selected during validation work well on unseen data.
 
-Logistic regression performs the best by a large margin, reaching an F1 of 0.993 and a PR-AUC of 0.997. This suggests that, when labels are available, simply knowing which events occur and how often they appear is enough to distinguish almost all normal and anomalous sessions. The model does not need to consider event order to achieve strong results on this dataset.
+The two supervised models perform best by a large margin. XGBoost reaches an F1 of 0.998 and a PR-AUC of 1.000, slightly ahead of logistic regression (0.993 and 0.997): on the 115,013 test sessions it makes 15 errors, compared with 45 for logistic regression. This suggests that, when labels are available, simply knowing which events occur and how often they appear is enough to distinguish almost all normal and anomalous sessions, and neither model needs to consider event order. The gap between them comes from how the counts relate to anomalies. A healthy block has exactly three replicas, so in the training split only 1.3\% of sessions with exactly three E5 events are anomalous, compared with 100\% of those with one or two and 64\% of those with four. Logistic regression is linear in each count and cannot express this ``exactly three'' pattern, whereas trees can, and most of its errors (39 of 45) are on count vectors it has already seen in training. The gap is small in absolute terms, and we have not yet tested whether it is significant (Section~\ref{sec:plans}).
+
+\paragraph{Label fraction.} To see how much the labels matter, we retrained both supervised models on 1\%, 10\% and 100\% of the training sessions, sampled so the anomaly rate stays the same (five random draws for the partial fractions, same hyperparameters, threshold re-chosen on the validation set each time). With only 1\% of the labels (4,026 sessions, 118 anomalies), logistic regression and XGBoost already reach F1 of 0.982 and 0.984, and with 10\% they reach 0.988 and 0.995, compared with 0.993 and 0.998 for the full set. Both are far above the best unsupervised model (0.709). One caveat is that the decision threshold is still chosen using all of the validation labels, so these results show how much training labels matter, not the cost of a setting with almost no labels at all.
 
 Among the unsupervised models, Isolation Forest achieves an F1 of 0.709. Its precision is high at 0.944, meaning that most sessions it flags are actually anomalous. However, its recall is only 0.567, so it misses almost half of the anomalies. One possible explanation is that some anomalous sessions have event counts similar to normal sessions, making them difficult to separate using count-based features alone.
 
@@ -257,15 +275,13 @@ We also compared our probability-based anomaly score with the original DeepLog t
 
 Adding the end-of-session token also made a noticeable difference. When we removed it, the LSTM's validation F1 dropped from 0.561 to 0.500, and its PR-AUC fell from 0.469 to 0.353. This suggests that learning when a session should end helps the model detect incomplete sequences that might otherwise look normal.
 
-Figure~\ref{fig:confusion} shows how each model's errors are split. Of the 3,368 anomalous test sessions, logistic regression misses only 16 and raises 29 false alarms among 111,645 normal sessions. Isolation Forest raises just 113 false alarms but misses 1,458 anomalies, whereas the LSTM misses fewer anomalies (1,142) at the cost of 2,453 false alarms. The two unsupervised models therefore fail in opposite ways: Isolation Forest is conservative, while the LSTM trades many false alarms for extra recall.
+Figure~\ref{fig:confusion} shows how each model's errors are split. Of the 3,368 anomalous test sessions, logistic regression misses only 16 and raises 29 false alarms among 111,645 normal sessions, while XGBoost misses 2 and raises 13. Isolation Forest raises just 113 false alarms but misses 1,458 anomalies, whereas the LSTM misses fewer anomalies (1,142) at the cost of 2,453 false alarms. The two unsupervised models therefore fail in opposite ways: Isolation Forest is conservative, while the LSTM trades many false alarms for extra recall.
 
-Overall, our results so far show a clear advantage for supervised learning on the HDFS dataset. Logistic regression performs particularly well using only event counts, while the unsupervised models struggle with anomalies that resemble normal sessions. Even the strongest unsupervised model, Isolation Forest, falls behind logistic regression by about 0.28 F1. This suggests that having labelled examples makes a substantial difference for anomaly detection in this dataset.
+Overall, our results so far show a clear advantage for supervised learning on this split of the HDFS dataset. Both supervised models perform particularly well using only event counts, while the unsupervised models struggle with anomalies that resemble normal sessions. Even the strongest unsupervised model, Isolation Forest, falls behind logistic regression by about 0.28 F1 and XGBoost by about 0.29. This suggests that having labelled examples makes a substantial difference for anomaly detection in this dataset.
 
 
 \section{Feedback and Plans}
 \label{sec:plans}
-
-We plan to use 5-fold cross-validation over the training and  validation data, keeping the test set fixed, to measure how much each model’s scores and chosen thresholds vary across folds.
 
 \subsection{TA Feedback}
 We received feedback from our TA, Hongyi, who suggested we include significance tests
@@ -277,24 +293,22 @@ differ, we will also report 95\% confidence intervals for F1 and PR-AUC to show 
 large the difference is.
 
 \subsection{Reflections and Next Steps}
-Our results so far show that the supervised baseline is hard to beat and that the
-unsupervised models, especially the LSTM, leave room for improvement. Our first priorities
-are to implement XGBoost, so that both families have two models on the same split, and to
-run the label-fraction experiment from our proposal, retraining the supervised models on
-1\%, 10\%, and 100\% of the labels to measure how much the labels are worth. For the LSTM,
+Our results so far show that the supervised models are hard to beat and that the
+unsupervised models, especially the LSTM, leave room for improvement. Our first priority is to test whether the differences between models are significant. For the LSTM,
 we trained on only 50,000 sessions that still contain anomalies, so we plan to train it on
 more of the training split and tune its window and hidden size on validation. We also plan
 to try TF-IDF and $n$-gram features for the count-based models
 (Section~\ref{sec:features}). Because HDFS has so few unique count vectors, we will also
 report how each model does on test sessions whose pattern was not seen in training (only 52
 anomalous test sessions), so the results do not rest only on repeated patterns. Finally, we
-will add the 5-fold cross-validation, McNemar's tests, and confidence intervals described
-above, so that the differences between models are supported by more than a single split.
+will add 5-fold cross-validation over the training and validation data (test set kept fixed),
+McNemar's tests, and confidence intervals, so that the differences between models are
+supported by more than a single split.
 
 
 \section*{Team Contributions}
 
-\textbf{Aditya Tripuraneni} set up the repository and the shared pipeline (data loading and splits, count-vector features, evaluation metrics, and plotting), wrote the dataset download script and dataset primer, and implemented and evaluated the logistic regression baseline with its tests. He wrote the Dataset section of this report (except the splits subsection) and set up its citations. XGBoost is still in progress.
+\textbf{Aditya Tripuraneni} set up the repository and the shared pipeline (data loading and splits, count-vector features, evaluation metrics, and plotting), wrote the dataset download script and dataset primer, and implemented and evaluated the logistic regression and XGBoost models with their tests, and ran the label-fraction experiment. He wrote the Dataset section of this report (except the splits subsection) and set up its citations.
 
 \textbf{Vanessa Lai} implemented and evaluated the Isolation Forest detector, including its script, tests, metrics, and confusion matrix. She set up the \LaTeX{} report and wrote the Introduction, the splits subsection, the Isolation Forest paragraph of Implementation, the TA Feedback subsection, and the future plans.
 
