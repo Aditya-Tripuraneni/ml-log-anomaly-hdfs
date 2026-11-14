@@ -1,7 +1,7 @@
 """Shared feature builders.
 
-Owner: shared. Count vectors feed the classical models (Logistic Regression, XGBoost,
-Isolation Forest); the raw ordered sequence feeds the LSTM.
+Count vectors feed the classical models (Logistic Regression, XGBoost, Isolation Forest);
+the raw ordered sequence feeds the LSTM.
 """
 
 import numpy as np

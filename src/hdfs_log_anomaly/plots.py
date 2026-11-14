@@ -1,6 +1,6 @@
 """Shared plots. They take true labels and predictions, not a model, so every model reuses them.
 
-Owner: shared. Static light-mode charts: blue ramp, near-black text.
+Static light-mode charts: blue ramp, near-black text.
 """
 
 from pathlib import Path
