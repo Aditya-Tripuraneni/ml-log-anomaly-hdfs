@@ -1,0 +1,25 @@
+{
+  "seed": 42,
+  "unique_count_vectors_all_sessions": 589,
+  "test_sessions": 115013,
+  "test_sessions_seen_in_train": 114949,
+  "test_sessions_seen_fraction": 0.9994435411649117,
+  "test_anomalies": 3368,
+  "test_anomalies_seen_in_train": 3316,
+  "test_anomalies_seen_fraction": 0.9845605700712589,
+  "test_sessions_unseen": 64,
+  "test_anomalies_unseen": 52,
+  "models": {
+    "logistic_regression": {
+      "anomalies_caught_among_unseen": 49,
+      "errors_total": 45,
+      "errors_on_seen_vectors": 39
+    },
+    "xgboost": {
+      "anomalies_caught_among_unseen": 50,
+      "errors_total": 15,
+      "errors_on_seen_vectors": 13
+    }
+  },
+  "logistic_regression_lbfgs_iterations": 33
+}
