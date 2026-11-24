@@ -27,13 +27,24 @@ def train(
     max_depth: int = 6,
     n_estimators: int = 100,
     random_state: int = RANDOM_STATE,
+    learning_rate: float = LEARNING_RATE,
+    min_child_weight: float = 1,
+    subsample: float = 1.0,
+    colsample_bytree: float = 1.0,
 ) -> XGBClassifier:
-    """Fit a class-weighted gradient-boosted tree classifier on the training split."""
+    """Fit a class-weighted gradient-boosted tree classifier on the training split.
+
+    The extra arguments default to XGBoost's own defaults, so `train(X, y)` is unchanged;
+    scripts/tune_xgboost.py varies them.
+    """
     positives = int((y_train == 1).sum())
     model = XGBClassifier(
         n_estimators=n_estimators,
         max_depth=max_depth,
-        learning_rate=LEARNING_RATE,
+        learning_rate=learning_rate,
+        min_child_weight=min_child_weight,
+        subsample=subsample,
+        colsample_bytree=colsample_bytree,
         scale_pos_weight=(len(y_train) - positives) / positives,
         tree_method="hist",
         eval_metric="aucpr",
