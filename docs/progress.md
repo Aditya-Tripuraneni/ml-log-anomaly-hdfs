@@ -2,6 +2,7 @@
 
 Newest first. One line per update: date, who, what.
 
+- 2026-11-23, Aditya: 5-fold cross-validation of LR and XGBoost on train + validation (shared fold helper `cross_validation.py` with tests, `scripts/run_cross_validation.py`), and a 40-setting XGBoost random search (`scripts/tune_xgboost.py`, no meaningful gain, so the report model is unchanged). Report updated.
 - 2026-11-13, Aditya: label-fraction experiment (logistic regression and XGBoost on 1%, 10%, 100% of training labels, several draws), repetition analysis script that saves the dataset-duplication statistics cited in the report.
 - 2026-11-12, Aditya: XGBoost on count vectors (class weighting via `scale_pos_weight`, tree depth and number of trees tuned on validation PR-AUC, F1 cutoff from validation), with run script, tests, metrics and confusion matrix.
 - 2026-11-10, Vanessa: switched the report's citations to the template's ACL author-year style.

@@ -33,6 +33,8 @@ uv run python scripts/run_logistic_regression.py
 uv run python scripts/run_xgboost.py
 uv run python scripts/analyze_repetition.py   # repetition stats cited in the report
 uv run python scripts/run_label_fraction.py
+uv run python scripts/run_cross_validation.py
+uv run python scripts/tune_xgboost.py
 uv run python scripts/run_isolation_forest.py
 uv run python scripts/run_deeplog_lstm.py
 ```

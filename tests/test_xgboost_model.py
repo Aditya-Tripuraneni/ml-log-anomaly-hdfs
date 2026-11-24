@@ -29,10 +29,30 @@ def synthetic_counts(n=2000, anomaly_rate=0.1, seed=0):
         [
             rng.poisson(2, n),  # E2: noise
             rng.poisson(3, n),  # E5: noise
-            np.where(y == 1, rng.poisson(5, n) + 1, rng.poisson(0.1, n)),  # E7: the signal
+            np.where(
+                y == 1, rng.poisson(5, n) + 1, rng.poisson(0.1, n)
+            ),  # E7: the signal
         ]
     )
     return X, y
+
+
+def test_train_accepts_extra_tree_hyperparameters():
+    X, y = synthetic_counts()
+    model = train(
+        X,
+        y,
+        learning_rate=0.3,
+        min_child_weight=5,
+        subsample=0.8,
+        colsample_bytree=0.7,
+        **SMALL,
+    )
+    params = model.get_params()
+    assert params["learning_rate"] == 0.3
+    assert params["min_child_weight"] == 5
+    assert params["subsample"] == 0.8
+    assert params["colsample_bytree"] == 0.7
 
 
 def test_class_weight_is_the_negative_to_positive_ratio():
@@ -79,7 +99,10 @@ def test_tune_returns_one_row_per_config_and_the_best_model():
         {"max_depth": 3, "n_estimators": 30},
     ]
     best_model, table = tune(X, y, X_val, y_val, grid=grid)
-    assert [(row["max_depth"], row["n_estimators"]) for row in table] == [(1, 5), (3, 30)]
+    assert [(row["max_depth"], row["n_estimators"]) for row in table] == [
+        (1, 5),
+        (3, 30),
+    ]
     best_row = max(table, key=lambda row: row["val_pr_auc"])
     params = best_model.get_params()
     assert (params["max_depth"], params["n_estimators"]) == (

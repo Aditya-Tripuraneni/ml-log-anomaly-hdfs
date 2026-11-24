@@ -220,7 +220,7 @@ of the 29 event types, and an event type it has never seen is treated as highly 
 \section{Results and Evaluation}
 \label{sec:results}
 
-\paragraph{Protocol.} We use the same stratified 70/10/20 split with a fixed random seed for all models (Section~\ref{sec:dataset}). This gives us 402,541 training, 57,507 validation, and 115,013 test sessions. All results so far are based on this single split, which allows us to compare models on exactly the same test data. The validation set also contains 1,684 anomalous sessions, giving us enough examples to tune the models. We plan to add 5-fold cross-validation to see how much the results change across different splits (Section~\ref{sec:plans}).
+\paragraph{Protocol.} We use the same stratified 70/10/20 split with a fixed random seed for all models (Section~\ref{sec:dataset}). This gives us 402,541 training, 57,507 validation, and 115,013 test sessions. The main results are based on this single split, which allows us to compare models on exactly the same test data. The validation set also contains 1,684 anomalous sessions, giving us enough examples to tune the models. For the two supervised models we also ran 5-fold cross-validation to see how much the results change across different splits (see the cross-validation paragraph below).
 
 We use the validation set to choose hyperparameters and decision thresholds, then evaluate each model once on the test set. For the unsupervised models, labels are not used during training and are only used to select the decision threshold on validation.
 
@@ -267,6 +267,8 @@ The two supervised models perform best by a large margin. XGBoost reaches an F1 
 
 \paragraph{Label fraction.} To see how much the labels matter, we retrained both supervised models on 1\%, 10\% and 100\% of the training sessions, sampled so the anomaly rate stays the same (five random draws for the partial fractions, same hyperparameters, threshold re-chosen on the validation set each time). With only 1\% of the labels (4,026 sessions, 118 anomalies), logistic regression and XGBoost already reach F1 of 0.982 and 0.984, and with 10\% they reach 0.988 and 0.995, compared with 0.993 and 0.998 for the full set. Both are far above the best unsupervised model (0.709). One caveat is that the decision threshold is still chosen using all of the validation labels, so these results show how much training labels matter, not the cost of a setting with almost no labels at all.
 
+\paragraph{Cross-validation.} We ran 5-fold stratified cross-validation for the two supervised models over the training and validation sessions combined (460,048 sessions), leaving the test set untouched. In each fold the vocabulary and model are fitted on part of the remaining folds, the decision threshold is chosen on a separate stratified ninth of them, and the held-out fold is scored once, using the hyperparameters chosen earlier on the validation set. XGBoost reaches an F1 of $0.998 \pm 0.0004$ and a PR-AUC of $1.000$ (mean $\pm$ standard deviation across folds), compared with $0.991 \pm 0.003$ and $0.995 \pm 0.001$ for logistic regression. XGBoost has the higher F1 in all five folds, and its worst fold (0.9976) is better than logistic regression's best (0.9926), so the ranking does not depend on the particular split. These numbers match the single split (0.993 for logistic regression, 0.998 for XGBoost). A wider random search over 40 XGBoost settings (learning rate, depth, number of trees, and row and column subsampling) improved the validation PR-AUC only from 0.99990 to 0.99996 and removed one test error, so we kept the original model.
+
 Among the unsupervised models, Isolation Forest achieves an F1 of 0.709. Its precision is high at 0.944, meaning that most sessions it flags are actually anomalous. However, its recall is only 0.567, so it misses almost half of the anomalies. One possible explanation is that some anomalous sessions have event counts similar to normal sessions, making them difficult to separate using count-based features alone.
 
 The DeepLog LSTM has a higher recall of 0.661, meaning it detects more anomalies than Isolation Forest, but its precision drops to 0.476 because it also flags many normal sessions. Looking more closely at its mistakes, we found that many missed anomalies are short, incomplete sessions such as \texttt{[E22, E5]}. These patterns appear repeatedly in the dataset, and since the unsupervised models are trained without removing the roughly 3\% of sessions that are anomalous (Isolation Forest on all 402,541 training sessions, the LSTM on a random subset of 50,000), the LSTM can learn to treat them as normal. On the other hand, many of its false positives are longer normal sessions where events from different replicas appear in an unusual order.
@@ -301,14 +303,13 @@ to try TF-IDF and $n$-gram features for the count-based models
 (Section~\ref{sec:features}). Because HDFS has so few unique count vectors, we will also
 report how each model does on test sessions whose pattern was not seen in training (only 52
 anomalous test sessions), so the results do not rest only on repeated patterns. Finally, we
-will add 5-fold cross-validation over the training and validation data (test set kept fixed),
-McNemar's tests, and confidence intervals, so that the differences between models are
-supported by more than a single split.
+will add McNemar's tests and confidence intervals, and extend the cross-validation to the
+Isolation Forest and the LSTM, so that all four models are compared on the same folds.
 
 
 \section*{Team Contributions}
 
-\textbf{Aditya Tripuraneni} set up the repository and the shared pipeline (data loading and splits, count-vector features, evaluation metrics, and plotting), wrote the dataset download script and dataset primer, and implemented and evaluated the logistic regression and XGBoost models with their tests, and ran the label-fraction experiment. He wrote the Dataset section of this report (except the splits subsection) and set up its citations.
+\textbf{Aditya Tripuraneni} set up the repository and the shared pipeline (data loading and splits, count-vector features, evaluation metrics, and plotting), wrote the dataset download script and dataset primer, and implemented and evaluated the logistic regression and XGBoost models with their tests, and ran the label-fraction experiment, the cross-validation of the supervised models, and a wider XGBoost hyperparameter search. He wrote the Dataset section of this report (except the splits subsection) and set up its citations.
 
 \textbf{Vanessa Lai} implemented and evaluated the Isolation Forest detector, including its script, tests, metrics, and confusion matrix. She set up the \LaTeX{} report and wrote the Introduction, the splits subsection, the Isolation Forest paragraph of Implementation, the TA Feedback subsection, and the future plans.
 
